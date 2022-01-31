@@ -12,11 +12,11 @@ from bert_seq2seq.extend_model_method import ExtendModel
 
 from transformers import BertTokenizer, BartForConditionalGeneration, Text2TextGenerationPipeline
 
-src_dir = './corpus/auto_title/train.src'
-tgt_dir = './corpus/auto_title/train.tgt'
+src_dir = './corpus/csl/train.src'
+tgt_dir = './corpus/csl/train.tgt'
 
-vocab_path = "./state_dict/bart-chinese" ## 字典
-model_path = "./state_dict/bart-chinese" ## 预训练参数
+vocab_path = "./state_dict/bart-base-chinese" ## 字典
+model_path = "./state_dict/bart-base-chinese" ## 预训练参数
 
 model_save_path = "./state_dict/bart_autotile.bin" ## 训练完模型 保存在哪里
 batch_size = 8

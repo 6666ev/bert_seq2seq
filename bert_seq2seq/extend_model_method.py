@@ -59,8 +59,6 @@ class ExtendModel:
             return self.tokenizer.decode(output_ids)
 
     def sample_generate_encoder_decoder(self, text, input_max_length=256, out_max_length=200, top_k=30, top_p=0.0, add_eos=False):
-
-
             token_out = self.tokenizer.encode(text, max_length=input_max_length)
             if len(token_out) == 2:
                 token_ids = token_out[0]
@@ -74,7 +72,9 @@ class ExtendModel:
             input_decoder_ids = torch.tensor(self.bos_id, device=self.device, dtype=torch.long).view(1, -1)
             with torch.no_grad():
                 for step in range(out_max_length):
-                    scores = self.model(input_ids=token_ids, decoder_input_ids=input_decoder_ids)[0]
+                    outputs = self.model(input_ids=token_ids, decoder_input_ids=(input_decoder_ids,input_decoder_ids))
+                    scores = outputs.logits[0]
+                    scores2 = outputs.logits[1]
                     logit_score = torch.log_softmax(scores[:, -1], dim=-1).squeeze(0)
                     # if self.tokenizer.unk_token_id is not None:
                     #     logit_score[self.tokenizer.unk_token_id] = -float('Inf')
