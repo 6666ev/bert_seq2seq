@@ -189,7 +189,10 @@ class Trainer:
                 report_loss = 0
 
             # 因为传入了target标签，因此会计算loss并且返回
-            loss = self.model(fact_ids, labels = (zm_labels_ids,xq_labels_ids), decoder_input_ids = (zm_ids, xq_ids))[0]
+            labels = {"zm":zm_labels_ids, "xq": xq_labels_ids}
+            decoder_input_ids = {"zm": zm_ids, "xq": xq_ids}
+            outputs = self.model(fact_ids, labels = labels, decoder_input_ids = decoder_input_ids)
+            loss = outputs[0]
             # 反向传播
             if train:
                 # 清空之前的梯度

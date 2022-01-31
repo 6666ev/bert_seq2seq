@@ -1317,8 +1317,8 @@ class BartForConditionalGeneration(BartPretrainedModel):
         masked_lm_loss = None
         if labels is not None:
             loss_fct = CrossEntropyLoss()
-            zm_loss = loss_fct(lm_logits.view(-1, self.config.vocab_size), labels.view(-1))
-            xq_loss = loss_fct(lm_logits2.view(-1, self.config.vocab_size), labels.view(-1))
+            zm_loss = loss_fct(lm_logits.view(-1, self.config.vocab_size), labels["zm"].view(-1))
+            xq_loss = loss_fct(lm_logits2.view(-1, self.config.vocab_size), labels["xq"].view(-1))
             masked_lm_loss = zm_loss + xq_loss
 
         if not return_dict: # 无用
@@ -1327,7 +1327,7 @@ class BartForConditionalGeneration(BartPretrainedModel):
 
         return Seq2SeqLMOutput(
             loss=masked_lm_loss,
-            logits=(lm_logits,lm_logits2),
+            logits=(lm_logits, lm_logits2),
             past_key_values=outputs.past_key_values,
             decoder_hidden_states=outputs.decoder_hidden_states,
             decoder_attentions=outputs.decoder_attentions,
