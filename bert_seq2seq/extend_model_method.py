@@ -67,14 +67,13 @@ class ExtendModel:
             if add_eos:
                 token_ids = token_ids + [self.eos_id]
             token_ids = torch.tensor(token_ids, device=self.device, dtype=torch.long).view(1, -1)
+            
             output_ids = []
-
             input_decoder_ids = torch.tensor(self.bos_id, device=self.device, dtype=torch.long).view(1, -1)
             with torch.no_grad():
                 for step in range(out_max_length):
                     outputs = self.model(input_ids=token_ids, decoder_input_ids=(input_decoder_ids,input_decoder_ids))
-                    scores = outputs.logits[0]
-                    scores2 = outputs.logits[1]
+                    scores = outputs.logits[0]  # 生成罪名
                     logit_score = torch.log_softmax(scores[:, -1], dim=-1).squeeze(0)
                     # if self.tokenizer.unk_token_id is not None:
                     #     logit_score[self.tokenizer.unk_token_id] = -float('Inf')

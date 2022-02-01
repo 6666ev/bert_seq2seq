@@ -1226,8 +1226,10 @@ class BartForConditionalGeneration(BartPretrainedModel):
     def __init__(self, config: BartConfig):
         super().__init__(config)
         self.model = BartModel(config)
-        self.register_buffer("final_logits_bias", torch.zeros((1, self.model.shared.num_embeddings)))
+        # self.register_buffer("final_logits_bias", torch.zeros((1, self.model.shared.num_embeddings)))
+
         self.lm_head = nn.Linear(config.d_model, self.model.shared.num_embeddings, bias=False)
+        self.lm_head2 = nn.Linear(config.d_model, self.model.shared.num_embeddings, bias=False)
 
         self.init_weights()
 
@@ -1310,15 +1312,15 @@ class BartForConditionalGeneration(BartPretrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
-        lm_logits = self.lm_head(outputs.last_hidden_state[0]) + self.final_logits_bias
-        lm_logits2 = self.lm_head(outputs.last_hidden_state[1]) + self.final_logits_bias
+        lm_logits = self.lm_head(outputs.last_hidden_state[0])
+        lm_logits2 = self.lm_head2(outputs.last_hidden_state[1])
         # lm_logits : [bs: 8, tgt-len: 31, vocab size: 21128]
 
         masked_lm_loss = None
         if labels is not None:
             loss_fct = CrossEntropyLoss()
-            zm_loss = loss_fct(lm_logits.view(-1, self.config.vocab_size), labels["zm"].view(-1))
-            xq_loss = loss_fct(lm_logits2.view(-1, self.config.vocab_size), labels["xq"].view(-1))
+            zm_loss = loss_fct(lm_logits.view(-1, self.config.vocab_size), labels[0].view(-1))
+            xq_loss = loss_fct(lm_logits2.view(-1, self.config.vocab_size), labels[1].view(-1))
             masked_lm_loss = zm_loss + xq_loss
 
         if not return_dict: # 无用
