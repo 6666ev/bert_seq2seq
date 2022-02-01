@@ -122,9 +122,9 @@ class SeqDataset(Dataset):
         src = self.sents_src[i]
         tgt_zm = self.sents_tgt_zm[i]
         tgt_xq = self.sents_tgt_xq[i]
-        token_ids_src = tokenizer.encode(src, max_length=256)
-        token_ids_tgt_zm = tokenizer.encode(tgt_zm, max_length=256)
-        token_ids_tgt_xq = tokenizer.encode(tgt_xq, max_length=256)
+        token_ids_src = tokenizer.encode(src, max_length=300)
+        token_ids_tgt_zm = tokenizer.encode(tgt_zm, max_length=200)
+        token_ids_tgt_xq = tokenizer.encode(tgt_xq, max_length=200)
 
         output = {
             "token_ids_src": token_ids_src,
@@ -233,12 +233,24 @@ class Trainer:
                     "2007年乔布斯向人们展示iPhone并宣称它将会改变世界，还有人认为他在夸大其词然而在8年后以iPhone为代表的触屏智能手机已经席卷全球各个角落，未来智能手机将会成为真正的个人电脑为人类发展做出更大的贡献",
                     "雅虎发布2014年第四季度财报并推出了免税方式剥离其持有的阿里巴巴集团15％股权的计划打算将这一价值约400亿美元的宝贵投资分配给股东截止发稿前雅虎股价上涨了大约7％至5145美元"
                 ]
-                test_data = self.test_src
 
-                for text in test_data:
-                    print("demo:")
-                    print(self.model.sample_generate_encoder_decoder(
-                        text, add_eos=True, top_k=20))
+                for i in range(len(self.test_src)):
+                    fact, zm, xq = self.test_src[i], self.test_tgt_zm[i], self.test_tgt_xq[i]
+
+                    def show(zm, xq):
+                        print("zm rationale:")
+                        print(zm)
+                        print("xq rationale:")
+                        print(xq)
+
+                    print("=== true ===")
+                    show(zm, xq)
+                    gen_text = self.model.sample_generate_encoder_decoder(
+                        fact, add_eos=True, top_k=20)
+                    print("=== gen ===")
+                    show(gen_text[0], gen_text[1])
+                    print("="*30)
+
                 self.model.train()
                 print("report loss is " + str(report_loss))
                 report_loss = 0

@@ -58,7 +58,32 @@ class ExtendModel:
 
             return self.tokenizer.decode(output_ids)
 
-    def sample_generate_encoder_decoder(self, text, input_max_length=256, out_max_length=200, top_k=30, top_p=0.0, add_eos=False):
+    def sample_generate_encoder_decoder2(self, text, input_max_length=256, out_max_length=200, top_k=30, top_p=0.0, add_eos=False):
+        token_out = self.tokenizer.encode(text, max_length=input_max_length)
+        if len(token_out) == 2:
+            token_ids = token_out[0]
+        else:
+            token_ids = token_out
+        if add_eos:
+            token_ids = token_ids + [self.eos_id]
+
+        token_ids = torch.tensor(token_ids, device=self.device, dtype=torch.long).view(1, -1)
+        output_ids = []
+        input_decoder_ids = torch.tensor(self.bos_id, device=self.device, dtype=torch.long).view(1, -1)
+        with torch.no_grad():
+            for step in range(out_max_length):
+                scores = self.model(input_ids=token_ids, decoder_input_ids=input_decoder_ids)[0]
+                logit_score = torch.log_softmax(scores[:, -1], dim=-1).squeeze(0)
+                filtered_logits = top_k_top_p_filtering(logit_score, top_k=top_k, top_p=top_p)
+                next_token = torch.multinomial(F.softmax(filtered_logits, dim=-1), num_samples=1)
+                if self.eos_id == next_token.item():
+                    break
+                output_ids.append(next_token.item())
+                input_decoder_ids = torch.cat((input_decoder_ids, next_token.long().unsqueeze(0)), dim=1)
+
+        return self.tokenizer.decode(output_ids)
+
+    def sample_generate_encoder_decoder(self, text, input_max_length=300, out_max_length=200, top_k=30, top_p=0.0, add_eos=False):
             token_out = self.tokenizer.encode(text, max_length=input_max_length)
             if len(token_out) == 2:
                 token_ids = token_out[0]
@@ -66,27 +91,36 @@ class ExtendModel:
                 token_ids = token_out
             if add_eos:
                 token_ids = token_ids + [self.eos_id]
+
             token_ids = torch.tensor(token_ids, device=self.device, dtype=torch.long).view(1, -1)
-            
-            output_ids = []
-            input_decoder_ids = torch.tensor(self.bos_id, device=self.device, dtype=torch.long).view(1, -1)
+            zm_output_ids, xq_output_ids = [], []
+            zm_input_decoder_ids = torch.tensor(self.bos_id, device=self.device, dtype=torch.long).view(1, -1)
+            xq_input_decoder_ids = torch.tensor(self.bos_id, device=self.device, dtype=torch.long).view(1, -1)
+
             with torch.no_grad():
                 for step in range(out_max_length):
-                    outputs = self.model(input_ids=token_ids, decoder_input_ids=(input_decoder_ids,input_decoder_ids))
+                    outputs = self.model(input_ids=token_ids, decoder_input_ids=(zm_input_decoder_ids, zm_input_decoder_ids))
                     scores = outputs.logits[0]  # 生成罪名
                     logit_score = torch.log_softmax(scores[:, -1], dim=-1).squeeze(0)
-                    # if self.tokenizer.unk_token_id is not None:
-                    #     logit_score[self.tokenizer.unk_token_id] = -float('Inf')
                     filtered_logits = top_k_top_p_filtering(logit_score, top_k=top_k, top_p=top_p)
                     next_token = torch.multinomial(F.softmax(filtered_logits, dim=-1), num_samples=1)
                     if self.eos_id == next_token.item():
                         break
-                        # pass
-                    output_ids.append(next_token.item())
-                    # token_ids = torch.cat((token_ids, next_token.long().unsqueeze(0)), dim=1)
-                    input_decoder_ids = torch.cat((input_decoder_ids, next_token.long().unsqueeze(0)), dim=1)
+                    zm_output_ids.append(next_token.item())
+                    zm_input_decoder_ids = torch.cat((zm_input_decoder_ids, next_token.long().unsqueeze(0)), dim=1)
 
-            return self.tokenizer.decode(output_ids)
+                for step in range(out_max_length):
+                    outputs = self.model(input_ids=token_ids, decoder_input_ids=(xq_input_decoder_ids, xq_input_decoder_ids))
+                    scores = outputs.logits[1]  # 生成刑期
+                    logit_score = torch.log_softmax(scores[:, -1], dim=-1).squeeze(0)
+                    filtered_logits = top_k_top_p_filtering(logit_score, top_k=top_k, top_p=top_p)
+                    next_token = torch.multinomial(F.softmax(filtered_logits, dim=-1), num_samples=1)
+                    if self.eos_id == next_token.item():
+                        break
+                    xq_output_ids.append(next_token.item())
+                    xq_input_decoder_ids = torch.cat((xq_input_decoder_ids, next_token.long().unsqueeze(0)), dim=1)
+
+            return self.tokenizer.decode(zm_output_ids), self.tokenizer.decode(xq_output_ids)
 
     def generate_unilm(self, text, out_max_length=40, beam_size=1, max_length=256):
         # 对 一个 句子生成相应的结果
