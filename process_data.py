@@ -34,6 +34,10 @@ def data_split(idx, data, data_name):
     valid_data = data[train_num:train_num+valid_num].tolist()
     test_data = data[train_num+valid_num:].tolist()
 
+    print(len(train_data))
+    print(len(valid_data))
+    print(len(test_data))
+    # return 
     path = "data/laic2021/train/{}".format(data_name)
     with open(path, "w") as f:
         for line in train_data:
