@@ -141,3 +141,6 @@ dmypy.json
 data/*
 corpus/*
 *.out
+logs/*
+res/*
+notebooks/*

@@ -1131,6 +1131,7 @@ class BartModel(BartPretrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        is_train=True
     ):
 
         # different to other models, Bart automatically creates decoder_input_ids from
@@ -1167,7 +1168,7 @@ class BartModel(BartPretrainedModel):
         # encoder_outputs.last_hidden_state.shape: [bs: 8, tgt-len: 256, dim: 768]
         # decoder outputs consists of (dec_features, past_key_value, dec_hidden, dec_attn)
         decoder_outputs = self.decoder(
-            input_ids=decoder_input_ids[0],
+            input_ids=decoder_input_ids[0] if is_train else decoder_input_ids,
             attention_mask=decoder_attention_mask,
             encoder_hidden_states=encoder_outputs[0],
             encoder_attention_mask=attention_mask,
@@ -1182,7 +1183,7 @@ class BartModel(BartPretrainedModel):
         )
 
         decoder_outputs2 = self.decoder2(
-            input_ids=decoder_input_ids[1],
+            input_ids=decoder_input_ids[1] if is_train else decoder_input_ids,
             attention_mask=decoder_attention_mask,
             encoder_hidden_states=encoder_outputs[0],
             encoder_attention_mask=attention_mask,
@@ -1279,6 +1280,7 @@ class BartForConditionalGeneration(BartPretrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        is_train=True,
     ):
         r"""
         labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):
@@ -1311,6 +1313,7 @@ class BartForConditionalGeneration(BartPretrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+            is_train=is_train
         )
         lm_logits = self.lm_head(outputs.last_hidden_state[0])
         lm_logits2 = self.lm_head2(outputs.last_hidden_state[1])

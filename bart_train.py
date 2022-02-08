@@ -245,7 +245,7 @@ class Trainer:
 
                     print("=== true ===")
                     show(zm, xq)
-                    gen_text = self.model.sample_generate_encoder_decoder(
+                    gen_text = self.model.sample_generate_encoder_decoder2(
                         fact, add_eos=True, top_k=20)
                     print("=== gen ===")
                     show(gen_text[0], gen_text[1])
@@ -280,7 +280,7 @@ class Trainer:
         print("epoch is " + str(epoch) + ". loss is " +
               str(total_loss) + ". spend time is " + str(spend_time))
         # 保存模型
-        model_save_path = "./save_model/bart_{}.bin".format(epoch)  # 训练完模型 保存在哪里
+        model_save_path = "./logs/enc1dec2/bart_{}.bin".format(epoch)  # 训练完模型 保存在哪里
         self.save(model_save_path)
 
 
