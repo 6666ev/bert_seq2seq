@@ -15,27 +15,29 @@ from transformers import BertTokenizer, Text2TextGenerationPipeline
 
 from modeling_bart import BartForConditionalGeneration
 
-train_src_dir = "data/laic2021/train/fact.src"
-train_zm_tgt_dir = "data/laic2021/train/zm.tgt"
-train_xq_tgt_dir = "data/laic2021/train/xq.tgt"
+data_name="laic2021_filter"
+train_src_dir = "data/{}/train/fact.src".format(data_name)
+train_zm_tgt_dir = "data/{}/train/zm.tgt".format(data_name)
+train_xq_tgt_dir = "data/{}/train/xq.tgt".format(data_name)
 
-valid_src_dir = "data/laic2021/valid/fact.src"
-valid_zm_tgt_dir = "data/laic2021/valid/zm.tgt"
-valid_xq_tgt_dir = "data/laic2021/valid/xq.tgt"
+valid_src_dir = "data/{}/valid/fact.src".format(data_name)
+valid_zm_tgt_dir = "data/{}/valid/zm.tgt".format(data_name)
+valid_xq_tgt_dir = "data/{}/valid/xq.tgt".format(data_name)
 
-test_src_dir = "data/laic2021/test/fact.src"
-test_zm_tgt_dir = "data/laic2021/test/zm.tgt"
-test_xq_tgt_dir = "data/laic2021/test/xq.tgt"
+test_src_dir = "data/{}/test/fact.src".format(data_name)
+test_zm_tgt_dir = "data/{}/test/zm.tgt".format(data_name)
+test_xq_tgt_dir = "data/{}/test/xq.tgt".format(data_name)
 
-# src_dir = 'corpus/csl/train.src'
-# zm_tgt_dir = 'corpus/csl/train.tgt'
-# xq_tgt_dir = 'corpus/csl/train.tgt'
+model_save_dir = "./logs/enc1dec2/"
 
 vocab_path = "./state_dict/bart-base-chinese"  # 字典
 model_path = "./state_dict/bart-base-chinese"  # 预训练参数
+train_epoches = 10
+fact_seq_len = 512
+zm_seq_len = 256
+xq_seq_len = 256
 
-
-batch_size = 8
+batch_size = 4
 lr = 1e-5
 
 tokenizer = BertTokenizer.from_pretrained(vocab_path)
@@ -122,9 +124,9 @@ class SeqDataset(Dataset):
         src = self.sents_src[i]
         tgt_zm = self.sents_tgt_zm[i]
         tgt_xq = self.sents_tgt_xq[i]
-        token_ids_src = tokenizer.encode(src, max_length=300)
-        token_ids_tgt_zm = tokenizer.encode(tgt_zm, max_length=200)
-        token_ids_tgt_xq = tokenizer.encode(tgt_xq, max_length=200)
+        token_ids_src = tokenizer.encode(src, max_length=fact_seq_len)
+        token_ids_tgt_zm = tokenizer.encode(tgt_zm, max_length=zm_seq_len)
+        token_ids_tgt_xq = tokenizer.encode(tgt_xq, max_length=xq_seq_len)
 
         output = {
             "token_ids_src": token_ids_src,
@@ -280,14 +282,13 @@ class Trainer:
         print("epoch is " + str(epoch) + ". loss is " +
               str(total_loss) + ". spend time is " + str(spend_time))
         # 保存模型
-        model_save_path = "./logs/enc1dec2/bart_{}.bin".format(epoch)  # 训练完模型 保存在哪里
+        model_save_path = model_save_dir+"bart_{}.bin".format(epoch)  # 训练完模型 保存在哪里
         self.save(model_save_path)
 
 
 if __name__ == '__main__':
 
     trainer = Trainer()
-    train_epoches = 10
     for epoch in range(train_epoches):
         # 训练一个epoch
         trainer.train(epoch)

@@ -169,6 +169,7 @@ class ExtendModel:
         generated_text =  self.tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
         return generated_text
 
+
     def sample_generate_encoder_decoder2(self, text, input_max_length=300, out_max_length=200, top_k=30, top_p=0.0, add_eos=False):
         token_out = self.tokenizer.encode(text, max_length=input_max_length)
         if len(token_out) == 2:
@@ -757,17 +758,29 @@ class ExtendModel:
             model_inputs = self.prepare_inputs_for_generation(
                 input_ids, **model_kwargs)
 
-            outputs = self(
-                **model_inputs,
-                return_dict=True,
-                output_attentions=output_attentions,
-                output_hidden_states=output_hidden_states,
-                is_train=False,
-            )
-            if gen_type=="zm":
-                next_token_logits = outputs.logits[0][:, -1, :]
-            elif gen_type=="xq":
-                next_token_logits = outputs.logits[1][:, -1, :]
+            # single模型的得到next token方法。得到outputs的时候不能加is_train这个参数。
+            # 因为是针对dec2模型的参数，在modeling_bart中修改了源码，实际transformers库中没有is_train这个参数
+            if gen_type=="single":
+                outputs = self(
+                    **model_inputs,
+                    return_dict=True,
+                    output_attentions=output_attentions,
+                    output_hidden_states=output_hidden_states,
+                )
+                next_token_logits = outputs.logits[:, -1, :]
+            else:
+                outputs = self(
+                    **model_inputs,
+                    return_dict=True,
+                    output_attentions=output_attentions,
+                    output_hidden_states=output_hidden_states,
+                    is_train=False,
+                )
+                if gen_type=="zm":
+                    next_token_logits = outputs.logits[0][:, -1, :]
+                elif gen_type=="xq":
+                    next_token_logits = outputs.logits[1][:, -1, :]
+
             # hack: adjust tokens for Marian. For Marian we have to make sure that the `pad_token_id`
             # cannot be generated both before and after the `F.log_softmax` operation.
             next_token_logits = self.adjust_logits_during_generation(

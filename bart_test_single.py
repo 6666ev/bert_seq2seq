@@ -13,23 +13,26 @@ from bert_seq2seq.extend_model_method import ExtendModel
 from transformers import BertTokenizer, BartForConditionalGeneration, Text2TextGenerationPipeline
 
 
-src_dir = 'data/laic2021/train/fact.src'
-tgt_dir = 'data/laic2021/train/xq.tgt'
+data_name="laic2021_filter"
+gen_type="xq"
+cur_device="cuda:1"
+batch_size = 32
+input_max_seq_len = 512
+output_max_seq_len = 256
 
-test_src_dir = 'data/laic2021/test/fact.src'
-test_tgt_dir = 'data/laic2021/test/xq.tgt'
+result_path = "res/single/{}_gen_batch.txt".format(gen_type)
+load_path = "logs/{}_single/bart_9.bin".format(gen_type)
+
+src_dir = 'data/{}/train/fact.src'.format(data_name)
+tgt_dir = 'data/{}/train/{}.tgt'.format(data_name,gen_type)
+
+test_src_dir = 'data/{}/test/fact.src'.format(data_name)
+test_tgt_dir = 'data/{}/test/{}.tgt'.format(data_name,gen_type)
 
 vocab_path = "./state_dict/bart-base-chinese"  # 字典
 model_path = "./state_dict/bart-base-chinese"  # 预训练参数
 
-result_path = "res/single/xq_gen_batch.txt"
-load_path = "logs/xq_single/bart_8.bin"
 
-batch_size = 32
-lr = 1e-5
-train_epoches = 10
-input_max_seq_len = 300
-output_max_seq_len = 200
 
 tokenizer = BertTokenizer.from_pretrained(vocab_path)
 word2idx = tokenizer.vocab
@@ -92,7 +95,7 @@ class Trainer:
 
         # 判断是否有可用GPU
         self.device = torch.device(
-            "cuda:3" if torch.cuda.is_available() else "cpu")
+            cur_device if torch.cuda.is_available() else "cpu")
         print("device: " + str(self.device))
         # 定义模型
         self.model = ExtendModel(
@@ -100,16 +103,15 @@ class Trainer:
 
         # 将模型发送到计算设备(GPU或CPU)
         self.model.to(self.device)
-        # self.model.set_device(self.device)
-        # 声明需要优化的参数
-        self.optim_parameters = list(self.model.parameters())
-        self.optimizer = torch.optim.Adam(
-            self.optim_parameters, lr=lr, weight_decay=1e-3)
+
 
     def test(self, load_path, result_path):
         self.model.eval()
-        self.model = torch.load(load_path)
+        device_str="{}:{}".format(self.device.type, self.device.index)
+        self.model = torch.load(load_path, map_location={'cuda:1':device_str})
         self.model.to(self.device)
+        self.model.device=self.device
+
         tgt_gen = []
         test_dataset = SeqDataset(self.test_src, self.test_tgt)
         test_dataloader = DataLoader(
@@ -118,6 +120,7 @@ class Trainer:
             fact, rat = data["fact"], data["rat_12"]
             gen_text = self.model.my_generate_text_beam(
                 fact,
+                gen_type="single",
                 input_max_length=input_max_seq_len,
                 output_max_length=output_max_seq_len,
                 add_eos=True)

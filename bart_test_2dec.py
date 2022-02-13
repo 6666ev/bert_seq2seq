@@ -10,34 +10,32 @@ from transformers import BertTokenizer, Text2TextGenerationPipeline
 
 from modeling_bart import BartForConditionalGeneration
 
-train_src_dir = "data/laic2021/train/fact.src"
-train_zm_tgt_dir = "data/laic2021/train/zm.tgt"
-train_xq_tgt_dir = "data/laic2021/train/xq.tgt"
+data_name="laic2021_filter"
+gen_type = "xq"
+cur_device="cuda:3"
+batch_size = 32
+input_max_seq_len = 512
+output_max_seq_len = 256
 
-valid_src_dir = "data/laic2021/valid/fact.src"
-valid_zm_tgt_dir = "data/laic2021/valid/zm.tgt"
-valid_xq_tgt_dir = "data/laic2021/valid/xq.tgt"
+load_path = "logs/enc1dec2/bart_5.bin"
+result_path = "res/dec2/{}_gen.txt".format(gen_type)
 
-test_src_dir = "data/laic2021/test/fact.src"
-test_zm_tgt_dir = "data/laic2021/test/zm.tgt"
-test_xq_tgt_dir = "data/laic2021/test/xq.tgt"
 
-# src_dir = 'corpus/csl/train.src'
-# zm_tgt_dir = 'corpus/csl/train.tgt'
-# xq_tgt_dir = 'corpus/csl/train.tgt'
+train_src_dir = "data/{}/train/fact.src".format(data_name)
+train_zm_tgt_dir = "data/{}/train/zm.tgt".format(data_name)
+train_xq_tgt_dir = "data/{}/train/xq.tgt".format(data_name)
+
+valid_src_dir = "data/{}/valid/fact.src".format(data_name)
+valid_zm_tgt_dir = "data/{}/valid/zm.tgt".format(data_name)
+valid_xq_tgt_dir = "data/{}/valid/xq.tgt".format(data_name)
+
+test_src_dir = "data/{}/test/fact.src".format(data_name)
+test_zm_tgt_dir = "data/{}/test/zm.tgt".format(data_name)
+test_xq_tgt_dir = "data/{}/test/xq.tgt".format(data_name)
 
 vocab_path = "./state_dict/bart-base-chinese"  # 字典
 model_path = "./state_dict/bart-base-chinese"  # 预训练参数
 
-
-batch_size = 32
-lr = 1e-5
-load_path = "logs/enc1dec2/bart_9.bin"
-result_path = "res/dec2/xq_gen_batch.txt"
-gen_type = "xq"
-
-input_max_seq_len = 300
-output_max_seq_len = 200
 
 tokenizer = BertTokenizer.from_pretrained(vocab_path)
 word2idx = tokenizer.vocab
@@ -124,10 +122,12 @@ class Trainer:
         # 加载数据
         self.train_fact, self.train_zm, self.train_xq = read_file(
             train_src_dir, train_zm_tgt_dir, train_xq_tgt_dir)
+        self.valid_fact, self.valid_zm, self.valid_xq = read_file(
+            valid_src_dir, valid_zm_tgt_dir, valid_xq_tgt_dir)
         self.test_fact, self.test_zm, self.test_xq = read_file(
             test_src_dir, test_zm_tgt_dir, test_xq_tgt_dir)
         # 判断是否有可用GPU
-        self.device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(cur_device if torch.cuda.is_available() else "cpu")
         print("device: " + str(self.device))
         # 定义模型
         self.model = ExtendModel(
@@ -135,20 +135,17 @@ class Trainer:
 
         # 将模型发送到计算设备(GPU或CPU)
         self.model.to(self.device)
-        # self.model.set_device(self.device)
-        # 声明需要优化的参数
-        self.optim_parameters = list(self.model.parameters())
-        self.optimizer = torch.optim.Adam(
-            self.optim_parameters, lr=lr, weight_decay=1e-3)
 
-    def test(self, model_path, result_path, gen_type="zm"):
+    def test(self, load_path, result_path, gen_type="zm"):
         self.model.eval()
         device_str="{}:{}".format(self.device.type, self.device.index)
-        self.model = torch.load(model_path, map_location={'cuda:1':device_str})
+        self.model = torch.load(load_path, map_location={'cuda:1':device_str})
         self.model.to(self.device)
         self.model.device=self.device
         gen_res = []
-        test_dataset = SeqDataset(self.test_fact, self.test_zm,self.test_xq)
+
+        
+        test_dataset = SeqDataset(self.test_fact, self.test_zm, self.test_xq)
         test_dataloader = DataLoader(
             test_dataset, drop_last=False, batch_size=batch_size)
         for data in tqdm(test_dataloader):
@@ -161,7 +158,6 @@ class Trainer:
                 add_eos=True
             )
             gen_res += gen_text
-            break
 
         with open(result_path, "w") as f:
             for line in gen_res:
