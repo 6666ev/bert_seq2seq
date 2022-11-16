@@ -13,24 +13,28 @@ from bert_seq2seq.extend_model_method import ExtendModel
 from transformers import BertTokenizer, BartForConditionalGeneration, Text2TextGenerationPipeline
 
 
-data_name="laic2021_filter"
-gen_type="xq"
-cur_device="cuda:1"
+data_name="judgment_gen"
+gen_type="result"
+cur_device="cuda:2"
 batch_size = 32
-input_max_seq_len = 512
-output_max_seq_len = 256
+input_max_seq_len = 300
+output_max_seq_len = 50
 
-result_path = "res/single/{}_gen_batch.txt".format(gen_type)
-load_path = "logs/{}_single/bart_9.bin".format(gen_type)
+input_data_name = "plea_fact"
+# input_data_name = "plea"
+# input_data_name = "fact"
 
-src_dir = 'data/{}/train/fact.src'.format(data_name)
-tgt_dir = 'data/{}/train/{}.tgt'.format(data_name,gen_type)
+result_path = "res/{}/judgment_gen.txt".format(input_data_name)
+load_path = "logs/judgments_gen/{}/bart_9.bin".format(input_data_name)
 
-test_src_dir = 'data/{}/test/fact.src'.format(data_name)
-test_tgt_dir = 'data/{}/test/{}.tgt'.format(data_name,gen_type)
+src_dir = 'data/{}/train/{}.src'.format(data_name, input_data_name)
+tgt_dir = 'data/{}/train/judgment.tgt'.format(data_name)
 
-vocab_path = "./state_dict/bart-base-chinese"  # 字典
-model_path = "./state_dict/bart-base-chinese"  # 预训练参数
+test_src_dir = 'data/{}/test/{}.src'.format(data_name, input_data_name)
+test_tgt_dir = 'data/{}/test/judgment.tgt'.format(data_name)
+
+vocab_path = "./ptm/bart-base-chinese"  # 字典
+model_path = "./ptm/bart-base-chinese"  # 预训练参数
 
 
 

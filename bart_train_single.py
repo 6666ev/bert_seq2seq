@@ -12,20 +12,23 @@ from bert_seq2seq.extend_model_method import ExtendModel
 
 from transformers import BertTokenizer, BartForConditionalGeneration, Text2TextGenerationPipeline
 
-data_name="laic2021_filter"
+data_name="judgment_gen"
+input_data_name = "plea_fact"
+# input_data_name = "plea"
+# input_data_name = "fact"
+
 src_dir = 'data/{}/train/fact.src'.format(data_name)
-tgt_dir = 'data/{}/train/zm.tgt'.format(data_name)
-# tgt_dir = 'data/laic2021/train/zm.tgt'
+tgt_dir = 'data/{}/train/judgment.tgt'.format(data_name)
+device = "cuda:0"
+vocab_path = "ptm/bart-base-chinese"  # 字典
+model_path = "ptm/bart-base-chinese"  # 预训练参数
 
-vocab_path = "./state_dict/bart-base-chinese"  # 字典
-model_path = "./state_dict/bart-base-chinese"  # 预训练参数
-
-model_save_dir = "./logs/zm_single/"  # 训练完模型 保存在哪里
+model_save_dir = f"logs/judgments_gen/{input_data_name}/"  # 训练完模型 保存在哪里
 batch_size = 4
 lr = 1e-5
 train_epoches = 10
-input_max_seq_len = 512
-output_max_seq_len = 256
+input_max_seq_len = 300
+output_max_seq_len = 50
 
 tokenizer = BertTokenizer.from_pretrained(vocab_path)
 word2idx = tokenizer.vocab
@@ -114,7 +117,7 @@ class Trainer:
         self.sents_src, self.sents_tgt = read_file()
 
         # 判断是否有可用GPU
-        self.device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(device if torch.cuda.is_available() else "cpu")
         print("device: " + str(self.device))
         # 定义模型
         self.model = ExtendModel(

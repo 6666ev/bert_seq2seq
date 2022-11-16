@@ -838,7 +838,7 @@ class ExtendModel:
                 break
 
         sequence_outputs = beam_scorer.finalize(
-            input_ids, beam_scores, next_tokens, next_indices, pad_token_id=pad_token_id, eos_token_id=eos_token_id
+            input_ids, beam_scores, next_tokens, next_indices, pad_token_id=pad_token_id, eos_token_id=eos_token_id, max_length=max_length
         )
 
         return sequence_outputs["sequences"]
